@@ -1,12 +1,12 @@
 {
-    "name": "shuvroroy/filament-spatie-laravel-backup",
-    "description": "This plugin is built on top of Spatie's Laravel-backup package",
+    "name": "cswni/filament-spatie-multiple-laravel-backup",
+    "description": "This plugin is built on top of Filament Spatie Laravel Backup package",
     "keywords": [
         "filament",
         "laravel-backup",
-        "filament-spatie-laravel-backup"
+        "filament-spatie-multiple-laravel-backup"
     ],
-    "homepage": "https://github.com/shuvroroy/filament-spatie-laravel-backup",
+    "homepage": "https://github.com/cswni/filament-spatie-multiple-laravel-backup",
     "license": "MIT",
     "authors": [
         {
