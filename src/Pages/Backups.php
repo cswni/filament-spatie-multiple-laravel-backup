@@ -14,19 +14,12 @@ use ShuvroRoy\FilamentSpatieLaravelBackup\Enums\Option;
 use ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackupPlugin;
 use ShuvroRoy\FilamentSpatieLaravelBackup\Jobs\CreateBackupJob;
 
-class Backups extends Page implements HasForms
+class Backups extends Page
 {
-    use InteractsWithForms;
-    public ?array $data = [];
-    public ?string $database = null;
+
     protected static ?string $navigationIcon = 'heroicon-o-cog';
 
     protected static string $view = 'filament-spatie-backup::pages.backups';
-
-    public function mount(): void
-    {
-        $this->form->fill();
-    }
 
     public function getHeading(): string | Htmlable
     {
@@ -63,7 +56,7 @@ class Backups extends Page implements HasForms
         /** @var FilamentSpatieLaravelBackupPlugin $plugin */
         $plugin = filament()->getPlugin('filament-spatie-backup');
 
-        CreateBackupJob::dispatch(Option::from($option), $plugin->getTimeout())
+        CreateBackupJob::dispatch(Option::from($option), $plugin->getTimeout(), justDatabase: true)
             ->onQueue($plugin->getQueue())
             ->afterResponse();
 
@@ -81,21 +74,5 @@ class Backups extends Page implements HasForms
         $plugin = filament()->getPlugin('filament-spatie-backup');
 
         return $plugin->hasStatusListRecordsTable();
-    }
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Select::make('database')
-                    ->label('Database')
-                    ->options([
-                        'all' => 'All',
-                        'only_db' => 'Only DB',
-                        'only_files' => 'Only Files',
-                    ])
-                    ->statePath('data.database'),
-            ])
-            ->statePath('data');
     }
 }

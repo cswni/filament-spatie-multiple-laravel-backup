@@ -24,6 +24,7 @@ class CreateBackupJob implements ShouldQueue
         protected readonly Option | string $option = Option::ALL,
         protected readonly ?int $timeout = null,
         protected readonly ?Database $database = null,
+        protected bool $justDatabase = false
     ) {
         $this->onQueue('default');
     }
@@ -36,6 +37,7 @@ class CreateBackupJob implements ShouldQueue
         // If database is not null, backup only the database
         if ($this->database) {
             $this->backupDatabase($this->database);
+
             return;
         }
 
@@ -43,7 +45,7 @@ class CreateBackupJob implements ShouldQueue
 
         //Load from database the site configuration
         // Verify if exists the class Database in App\Models\Database
-        if (class_exists('App\Models\Database')) {
+        if (class_exists('App\Models\Database') && ! $this->justDatabase) {
             $databases = \App\Models\Database::all();
             foreach ($databases as $database) {
                 $filename = Str::replace(' ', '-', $database['name']) . '-' . date('Y-m-d-H-i-s') . '.zip';
@@ -66,6 +68,16 @@ class CreateBackupJob implements ShouldQueue
                 $database->last_backup_path = $site['filename'];
                 $database->save();
             }
+        }
+
+        // If justDatabase is true, backup only the database for self site
+        if ($this->justDatabase) {
+            Artisan::call(BackupCommand::class, [
+                '--only-db' => 1,
+                '--only-files' => 0,
+                '--filename' => 'databases-' . date('Y-m-d-H-i-s') . '.zip',
+                '--timeout' => $this->timeout,
+            ]);
         }
     }
 

@@ -14,8 +14,6 @@
                 <h3 class="text-xl">{{ __('filament-spatie-backup::backup.pages.backups.modal.label') }}</h3>
             </x-slot>
 
-            {{ $this->form }}
-
             <x-slot name="footer" >
                 <div class="flex gap-x-2">
                     <x-filament::button wire:click="create('only-db')" color="primary" class="w-full">
