@@ -2,6 +2,7 @@
 
 namespace ShuvroRoy\FilamentSpatieLaravelBackup\Jobs;
 
+use App\Models\Database;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -9,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
 use ShuvroRoy\FilamentSpatieLaravelBackup\Enums\Option;
 use Spatie\Backup\Commands\BackupCommand;
 
@@ -19,8 +21,9 @@ class CreateBackupJob implements ShouldQueue
     use Queueable;
 
     public function __construct(
-        protected readonly Option $option = Option::ALL,
+        protected readonly Option | string $option = Option::ALL,
         protected readonly ?int $timeout = null,
+        protected readonly ?Database $database = null,
     ) {
         $this->onQueue('default');
     }
@@ -30,37 +33,64 @@ class CreateBackupJob implements ShouldQueue
      */
     public function handle(): void
     {
-        // @TODO
+        // If database is not null, backup only the database
+        if ($this->database) {
+            $this->backupDatabase($this->database);
+            return;
+        }
+
         // https://tim.macdonald.au/backup-multiple-sites-frameworks-laravel-backup/
+
         //Load from database the site configuration
+        // Verify if exists the class Database in App\Models\Database
+        if (class_exists('App\Models\Database')) {
+            $databases = \App\Models\Database::all();
+            foreach ($databases as $database) {
+                $filename = Str::replace(' ', '-', $database['name']) . '-' . date('Y-m-d-H-i-s') . '.zip';
+                $site = [
+                    'filename' => $filename,
+                    'name' => $database->name,
+                    'host' => $database->host,
+                    'port' => $database->port,
+                    'database' => $database->database,
+                    'username' => $database->username,
+                    'password' => $database->password,
+                ];
 
-        // Mock site configuration
-        $site = [
-            'host' => 'mariadb_shaddai',
-            'port' => '3306',
-            'database' => 'shaddai',
-            'username' => 'cswni',
-            'password' => 'cswni',
-        ];
+                // Backup
+                $this->backupDatabase($site);
 
+                // Update last_backup_at, backup_count, last_backup_path
+                $database->last_backup_at = now();
+                $database->backup_count = $database->backup_count + 1;
+                $database->last_backup_path = $site['filename'];
+                $database->save();
+            }
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function backupDatabase($site): void
+    {
         $this->setupConfigForSite($site);
 
         Artisan::call(BackupCommand::class, [
             '--only-db' => 1,
             '--only-files' => 0,
-            '--filename' => $site ['database'] .'-'.date('Y-m-d-H-i-s') . '.zip',
+            '--filename' => $site['filename'],
             '--timeout' => $this->timeout,
         ]);
     }
 
     public function setupConfigForSite($site): void
     {
-
         try {
             //Clear the config
             Artisan::call('config:clear');
 
-            Config::set('backup.backup.name', 'demo');
+            Config::set('backup.backup.name', 'backup-' . $site['name']);
             Config::set('database.connections.mysql.host', $site['host']);
             Config::set('database.connections.mysql.port', $site['port']);
             Config::set('database.connections.mysql.database', $site['database']);
