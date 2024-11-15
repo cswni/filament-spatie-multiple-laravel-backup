@@ -36,7 +36,7 @@ class CreateBackupJob implements ShouldQueue
     {
         // If database is not null, backup only the database
         if ($this->database) {
-            $this->backupDatabase($this->database);
+            $this->backupDatabase($this->generateFilename($this->database));
 
             return;
         }
