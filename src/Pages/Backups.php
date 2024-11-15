@@ -43,6 +43,11 @@ class Backups extends Page
                 ->button()
                 ->label(__('filament-spatie-backup::backup.pages.backups.actions.create_backup'))
                 ->action('openOptionModal'),
+
+            Action::make('Backup all now')
+                ->color('success')
+                ->button()
+                ->action('createNow'),
         ];
     }
 
@@ -57,6 +62,23 @@ class Backups extends Page
         $plugin = filament()->getPlugin('filament-spatie-backup');
 
         CreateBackupJob::dispatch(Option::from($option), $plugin->getTimeout(), justDatabase: true)
+            ->onQueue($plugin->getQueue())
+            ->afterResponse();
+
+        $this->dispatch('close-modal', id: 'backup-option');
+
+        Notification::make()
+            ->title(__('filament-spatie-backup::backup.pages.backups.messages.backup_success'))
+            ->success()
+            ->send();
+    }
+
+    public function createNow(string $option = ''): void
+    {
+        /** @var FilamentSpatieLaravelBackupPlugin $plugin */
+        $plugin = filament()->getPlugin('filament-spatie-backup');
+
+        CreateBackupJob::dispatch(Option::from($option), $plugin->getTimeout(), justDatabase: false)
             ->onQueue($plugin->getQueue())
             ->afterResponse();
 
