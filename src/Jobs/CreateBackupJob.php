@@ -48,16 +48,7 @@ class CreateBackupJob implements ShouldQueue
         if (class_exists('App\Models\Database') && ! $this->justDatabase) {
             $databases = \App\Models\Database::all();
             foreach ($databases as $database) {
-                $filename = Str::replace(' ', '-', $database['name']) . '-' . date('Y-m-d-H-i-s') . '.zip';
-                $site = [
-                    'filename' => $filename,
-                    'name' => $database->name,
-                    'host' => $database->host,
-                    'port' => $database->port,
-                    'database' => $database->database,
-                    'username' => $database->username,
-                    'password' => $database->password,
-                ];
+                $site = $this->generateFileName($database);
 
                 // Backup
                 $this->backupDatabase($site);
@@ -118,5 +109,20 @@ class CreateBackupJob implements ShouldQueue
             throw new Exception('Error setting up config for site');
         }
 
+    }
+
+
+    private function generateFilename($database): array
+    {
+        $filename = Str::replace(' ', '-', $database['name']) . '-' . date('Y-m-d-H-i-s') . '.zip';
+        return [
+            'filename' => $filename,
+            'name' => $database->name,
+            'host' => $database->host,
+            'port' => $database->port,
+            'database' => $database->database,
+            'username' => $database->username,
+            'password' => $database->password,
+        ];
     }
 }
